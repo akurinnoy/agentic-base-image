@@ -26,7 +26,9 @@ RUN ARCH=$(case "${TARGETARCH}" in \
       -o /tmp/gh_checksums.txt && \
     curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${ARCH}.tar.gz" \
       -o /tmp/gh.tar.gz && \
-    grep "gh_${GH_VERSION}_linux_${ARCH}.tar.gz" /tmp/gh_checksums.txt | sha256sum -c && \
+    EXPECTED=$(grep "gh_${GH_VERSION}_linux_${ARCH}.tar.gz" /tmp/gh_checksums.txt | awk '{print $1}') && \
+    ACTUAL=$(sha256sum /tmp/gh.tar.gz | awk '{print $1}') && \
+    [ "$EXPECTED" = "$ACTUAL" ] || (echo "Checksum mismatch for gh CLI!" >&2; exit 1) && \
     tar xz --strip-components=2 -C /usr/local/bin -f /tmp/gh.tar.gz "gh_${GH_VERSION}_linux_${ARCH}/bin/gh" && \
     rm /tmp/gh.tar.gz /tmp/gh_checksums.txt && \
     gh --version
