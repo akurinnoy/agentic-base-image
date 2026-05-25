@@ -11,6 +11,13 @@ RUN ARCH=$(case "${TARGETARCH}" in amd64) echo "x86_64" ;; arm64) echo "arm64" ;
     curl -fsSL "https://github.com/tmux/tmux-builds/releases/download/v${TMUX_VERSION}/tmux-${TMUX_VERSION}-linux-${ARCH}.tar.gz" \
       | tar xz -C /usr/bin tmux
 
+# Install GitHub CLI
+ARG GH_VERSION=2.92.0
+RUN ARCH=$(case "${TARGETARCH}" in amd64) echo "amd64" ;; arm64) echo "arm64" ;; esac) && \
+    curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_${ARCH}.tar.gz" \
+      | tar xz --strip-components=2 -C /usr/local/bin "gh_${GH_VERSION}_linux_${ARCH}/bin/gh" && \
+    gh --version
+
 COPY --from=ttyd /usr/bin/ttyd /usr/bin/ttyd
 
 USER 1001
