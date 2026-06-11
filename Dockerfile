@@ -1,19 +1,8 @@
-FROM docker.io/tsl0922/ttyd:1.7.8-alpine AS ttyd
-
 FROM quay.io/devfile/universal-developer-image:ubi9-latest
 
 USER 0
 
 ARG TARGETARCH
-ARG TMUX_VERSION=3.6a
-
-RUN ARCH=$(case "${TARGETARCH}" in \
-      amd64) echo "x86_64" ;; \
-      arm64) echo "arm64" ;; \
-      *) echo "unsupported TARGETARCH=${TARGETARCH}" >&2; exit 1 ;; \
-    esac) && \
-    curl -fsSL "https://github.com/tmux/tmux-builds/releases/download/v${TMUX_VERSION}/tmux-${TMUX_VERSION}-linux-${ARCH}.tar.gz" \
-      | tar xz -C /usr/bin tmux
 
 # Install GitHub CLI
 ARG GH_VERSION=2.92.0
@@ -33,9 +22,13 @@ RUN ARCH=$(case "${TARGETARCH}" in \
     rm /tmp/gh.tar.gz /tmp/gh_checksums.txt && \
     gh --version
 
-COPY --from=ttyd /usr/bin/ttyd /usr/bin/ttyd
+# Allow root-group writes to /etc/profile.d/ for postStart hook (injected-tools)
+RUN chmod 775 /etc/profile.d/
+
+# Install node-pty native addon (built for UDI/RHEL glibc platform)
+# Chemuxer's JS bundle is injected via shared volume, but node-pty must be
+# compiled for the target platform — Alpine-built binaries are incompatible.
+RUN source /home/tooling/.nvm/nvm.sh && \
+    npm install --prefix /usr/share/node-pty node-pty@1.1.0
 
 USER 1001
-
-EXPOSE 7681
-CMD ["/usr/bin/ttyd", "-W", "-p", "7681", "bash"]
